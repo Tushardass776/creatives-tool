@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PW Store – Ad Creative Generator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f1117;--surface:#181b26;--surface2:#1f2235;--border:#2a2f4a;
+  --teal:#1a7f78;--teal-light:#22a89e;--red:#d42b2b;--gold:#f0c030;
+  --text:#eef0f8;--muted:#6b7299;--radius:10px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Header ── */
+header{display:flex;align-items:center;gap:12px;padding:14px 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.pw-badge{display:flex;align-items:center;gap:8px;background:#111;border:2px solid #333;border-radius:50px;padding:5px 12px 5px 5px}
+.pw-circle{width:28px;height:28px;background:#111;border:2.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff;letter-spacing:-0.5px}
+.pw-label{font-size:13px;font-weight:700;color:#fff}
+header h1{font-size:16px;font-weight:600}
+.status-bar{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#3c3}
+.status-dot.busy{background:var(--gold);animation:pulse 1s infinite}
+.status-dot.error{background:#f55}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ── Tabs ── */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{padding:11px 20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.2s}
+.tab.active{color:var(--teal-light);border-bottom-color:var(--teal-light)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* ── Main Layout ── */
+.main{display:flex;flex:1;overflow:hidden}
+.pane{display:none;flex:1;overflow-y:auto;padding:20px}
+.pane.active{display:flex;flex-direction:column;gap:16px}
+
+/* ── Cards ── */
+.card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+/* ── Form ── */
+label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:600}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;padding:9px 11px;outline:none;transition:border-color .2s;font-family:inherit}
+input:focus,textarea:focus,select:focus{border-color:var(--teal-light)}
+textarea{resize:vertical;min-height:60px}
+select option{background:var(--surface2)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:0}
+.spacer{height:10px}
+
+/* ── Upload ── */
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;position:relative;transition:all .2s}
+.upload-zone:hover{border-color:var(--teal-light);background:rgba(26,127,120,.05)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-zone .uz-icon{font-size:24px;margin-bottom:6px}
+.upload-zone .uz-text{font-size:12px;color:var(--muted)}
+.logo-preview{max-height:44px;max-width:120px;object-fit:contain;margin:6px auto 0;display:block}
+.img-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.img-slot{aspect-ratio:1;border:2px dashed var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;font-size:11px;color:var(--muted);transition:all .2s}
+.img-slot:hover{border-color:var(--teal-light)}
+.img-slot input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.img-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:5px}
+.img-slot .rm{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.75);border:none;border-radius:50%;width:18px;height:18px;color:#fff;font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:2}
+.img-slot:hover .rm{display:flex}
+.img-slot .plus{font-size:20px;color:var(--border)}
+
+/* ── Buttons ── */
+.btn{padding:10px 18px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:linear-gradient(135deg,var(--teal),#0f6b64);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--teal-light)}
+.btn-full{width:100%;padding:13px}
+.btn-sm{padding:6px 12px;font-size:11px}
+.btn-danger{background:rgba(212,43,43,.15);border:1px solid rgba(212,43,43,.3);color:#f77}
+
+/* ── Google Auth ── */
+.auth-card{text-align:center;padding:24px}
+.auth-card .auth-icon{font-size:40px;margin-bottom:12px}
+.auth-card h3{font-size:15px;margin-bottom:6px}
+.auth-card p{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6}
+.btn-google{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#333;border:none;border-radius:7px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;transition:box-shadow .2s}
+.btn-google:hover{box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.google-icon{width:18px;height:18px}
+
+/* ── Sheet Setup ── */
+.sheet-row{display:flex;gap:8px;align-items:flex-end}
+.sheet-row input{flex:1}
+.connected-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(51,204,51,.1);border:1px solid rgba(51,204,51,.3);color:#3c3;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600}
+
+/* ── Queue Table ── */
+.queue-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;background:var(--bg);color:var(--muted);font-weight:600;letter-spacing:0.5px;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge-status{display:inline-block;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.badge-pending{background:rgba(240,192,48,.15);color:var(--gold);border:1px solid rgba(240,192,48,.3)}
+.badge-processing{background:rgba(26,127,120,.2);color:var(--teal-light);border:1px solid rgba(26,127,120,.3)}
+.badge-done{background:rgba(51,204,51,.1);color:#3c3;border:1px solid rgba(51,204,51,.3)}
+.badge-error{background:rgba(212,43,43,.1);color:#f77;border:1px solid rgba(212,43,43,.3)}
+.link-cell a{color:var(--teal-light);text-decoration:none;font-size:11px}
+.link-cell a:hover{text-decoration:underline}
+
+/* ── Output Preview Pane ── */
+.preview-grid{display:flex;flex-wrap:wrap;gap:20px}
+.preview-block h4{font-size:11px;color:var(--muted);margin-bottom:8px;letter-spacing:0.5px}
+.canvas-wrap{position:relative;cursor:pointer;border-radius:8px;overflow:hidden;transition:transform .15s}
+.canvas-wrap:hover{transform:translateY(-2px)}
+.canvas-wrap canvas{display:block;border-radius:8px}
+.canvas-wrap .dl-btn{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;opacity:0;transition:opacity .2s}
+.canvas-wrap:hover .dl-btn{opacity:1}
+
+/* ── Progress ── */
+.progress-bar-wrap{background:var(--bg);border-radius:10px;height:6px;overflow:hidden;margin-top:8px}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--teal),var(--teal-light));border-radius:10px;transition:width .3s}
+.log-lines{max-height:200px;overflow-y:auto;font-size:11px;font-family:monospace;color:var(--muted);padding:10px;background:var(--bg);border-radius:7px;margin-top:8px}
+.log-lines .log-ok{color:#3c3}
+.log-lines .log-err{color:#f77}
+.log-lines .log-info{color:var(--teal-light)}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 18px;border-radius:9px;font-size:13px;font-weight:500;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9999;max-width:320px}
+.toast.show{opacity:1}
+
+/* ── Tooltip ── */
+.tip{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="pw-badge"><div class="pw-circle">PW</div><span class="pw-label">Store</span></div>
+  <h1>Ad Creative Generator</h1>
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Ready</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('setup')">⚙️ Setup</div>
+  <div class="tab" onclick="switchTab('generate')">✨ Generate</div>
+  <div class="tab" onclick="switchTab('queue')">📋 Sheet Queue</div>
+  <div class="tab" onclick="switchTab('preview')">🖼 Preview</div>
+</div>
+
+<div class="main">
+
+<!-- ══════════════ SETUP PANE ══════════════ -->
+<div class="pane active" id="pane-setup">
+
+  <!-- Google Auth -->
+  <div class="card" id="authCard">
+    <div class="card-title">Google Account</div>
+    <div id="authNotConnected">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="font-size:32px">🔐</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px">Connect Google Account</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">Required to read from Google Sheets and upload creatives to Google Drive. Your data stays in your own Drive.</div>
+        </div>
+        <button class="btn-google" onclick="connectGoogle()">
+          <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Sign in with Google
+        </button>
+      </div>
+    </div>
+    <div id="authConnected" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px">
+        <img id="userAvatar" style="width:36px;height:36px;border-radius:50%" src="" />
+        <div>
+          <div style="font-size:13px;font-weight:600" id="userName">—</div>
+          <div style="font-size:11px;color:var(--muted)" id="userEmail">—</div>
+        </div>
+        <span class="connected-chip" style="margin-left:auto">✓ Connected</span>
+        <button class="btn btn-secondary btn-sm" onclick="disconnectGoogle()">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Sheet Setup -->
+  <div class="card">
+    <div class="card-title">Google Sheet</div>
+    <div class="field">
+      <label>Sheet ID or URL</label>
+      <div class="sheet-row">
+        <input type="text" id="sheetId" placeholder="Paste your Google Sheet URL or ID here" />
+        <button class="btn btn-secondary" onclick="connectSheet()">Connect</button>
+      </div>
+      <div class="tip">The sheet must be shared with your Google account. We'll auto-create the correct column headers.</div>
+    </div>
+    <div id="sheetStatus" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <!-- PW Store Logo -->
+  <div class="card">
+    <div class="card-title">PW Store Logo (set once)</div>
+    <div class="upload-zone" id="logoZone">
+      <input type="file" accept="image/*" onchange="handleLogo(event)">
+      <div class="uz-icon">🏪</div>
+      <div style="font-size:12px;margin-bottom:2px">Upload PW Store logo</div>
+      <div class="uz-text">PNG with transparency preferred · used in all creatives</div>
+      <img id="logoPreview" class="logo-preview" style="display:none" />
+    </div>
+  </div>
+
+  <!-- Drive Folder -->
+  <div class="card">
+    <div class="card-title">Google Drive Output Folder</div>
+    <div class="field">
+      <label>Folder ID or URL (leave blank to auto-create "PW Ad Creatives")</label>
+      <input type="text" id="driveFolderId" placeholder="https://drive.google.com/drive/folders/..." />
+      <div class="tip">Creatives will be saved here, organised as sub-folders per campaign.</div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="saveSetup()">Save Setup & Continue →</button>
+</div>
+
+<!-- ══════════════ GENERATE PANE ══════════════ -->
+<div class="pane" id="pane-generate">
+
+  <div class="card">
+    <div class="card-title">Campaign Details</div>
+    <div class="field"><label>Campaign Name *</label><input type="text" id="g_campaign" placeholder="e.g. Big Savings Days – JEE 2026" /></div>
+    <div class="spacer"></div>
+    <div class="field"><label>Product / Category *</label><input type="text" id="g_category" placeholder="e.g. JEE Books, NEET Study Material, UPSC Books" /></div>
+    <div class="spacer"></div>
+    <div class="row2">
+      <div class="field"><label>Coupon Code</label><input type="text" id="g_coupon" placeholder="SAVEBIG" /></div>
+      <div class="field"><label>Min. Order Amount</label><input type="text" id="g_minorder" placeholder="₹500" /></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="row2">
+      <div class="field"><label>COD Offer (left box)</label><input type="text" id="g_cod" placeholder="10% Off up to ₹150 on COD" /></div>
+      <div class="field"><label>Prepaid Offer (right box)</label><input type="text" id="g_prepaid" placeholder="15% Off up to ₹250 on Prepaid" /></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="field"><label>Sub-headline (optional · auto-generated if blank)</label><input type="text" id="g_subhook" placeholder='e.g. "Study Smartly with PW JEE Books"' /></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Product Images (optional · up to 6)</div>
+    <div class="img-grid" id="productGrid"></div>
+    <div class="tip" style="margin-top:8px">Books appear on the platform shelf at the bottom of the creative. Use PNG/JPG with white or transparent background.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Formats & Variants</div>
+    <div class="row2" style="margin-bottom:10px">
+      <div>
+        <label>Ad Formats</label>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px" id="formatChecks">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)"><input type="checkbox" value="1080x1920" checked style="width:auto"> 📱 Story 1080×1920</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)"><input type="checkbox" value="1200x1200" checked style="width:auto"> ⬜ Square 1200×1200</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)"><input type="checkbox" value="1200x628" style="width:auto"> 🖥 Landscape 1200×628</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)"><input type="checkbox" value="960x1200" style="width:auto"> 📐 Portrait 960×1200</label>
+        </div>
+      </div>
+      <div>
+        <label>Creative Variants</label>
+        <select id="g_variants" style="margin-top:4px">
+          <option value="1">1 variant</option>
+          <option value="2" selected>2 variants</option>
+          <option value="3">3 variants</option>
+          <option value="4">4 variants (all styles)</option>
+        </select>
+        <div class="tip" style="margin-top:6px">Each variant uses a different layout style from your winning creatives.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-primary" style="flex:1;padding:13px" onclick="generateNow()">✨ Generate & Upload to Drive</button>
+    <button class="btn btn-secondary" style="padding:13px" onclick="generatePreviewOnly()">👁 Preview Only</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="card" id="progressCard" style="display:none">
+    <div class="card-title">Progress</div>
+    <div id="progressLabel" style="font-size:13px;margin-bottom:6px">Starting...</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+    <div class="log-lines" id="logLines"></div>
+  </div>
+</div>
+
+<!-- ══════════════ QUEUE PANE ══════════════ -->
+<div class="pane" id="pane-queue">
+  <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:600">Sheet Queue</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">Rows in your connected sheet. Rows marked "Pending" will be processed when you click Run.</div>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="refreshQueue()">↻ Refresh</button>
+    <button class="btn btn-primary btn-sm" onclick="processQueue()">▶ Run Pending</button>
+  </div>
+
+  <div class="card">
+    <div id="queueContent">
+      <div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">
+        Connect a Google Sheet in Setup to see the queue.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Google Sheet Template</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.7">
+      Your sheet needs these exact column headers (we'll auto-create them):
+    </div>
+    <div style="font-size:11px;font-family:monospace;background:var(--bg);border-radius:6px;padding:12px;line-height:2;overflow-x:auto;white-space:nowrap">
+      <span style="color:var(--teal-light)">Campaign Name</span> | <span style="color:var(--gold)">Category</span> | <span style="color:#b8a0f8">Sub Headline</span> | <span style="color:#f8a0a0">Coupon Code</span> | <span style="color:#a0f8b8">Min Order</span> | <span style="color:#f8d0a0">COD Offer</span> | <span style="color:#a0d8f8">Prepaid Offer</span> | <span style="color:#f8a0d8">Product Image URLs</span> | <span style="color:#d0f8a0">Formats</span> | <span style="color:var(--muted)">Variants</span> | <span style="color:var(--muted)">Status</span> | <span style="color:var(--teal-light)">Drive Folder Link</span>
+    </div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="copySheetTemplate()">📋 Copy Apps Script for Sheet Button</button>
+  </div>
+</div>
+
+<!-- ══════════════ PREVIEW PANE ══════════════ -->
+<div class="pane" id="pane-preview">
+  <div id="previewEmpty" style="text-align:center;padding:40px;color:var(--muted)">
+    <div style="font-size:40px;margin-bottom:12px;opacity:.4">🖼</div>
+    <div style="font-size:14px">Generate creatives to see them here</div>
+  </div>
+  <div id="previewContent" style="display:none"></div>
+</div>
+
+</div><!-- /main -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+const STATE = {
+  googleToken: null,
+  userInfo: null,
+  sheetId: null,
+  sheetName: 'Creatives',
+  driveFolderId: null,
+  logoDataUrl: null,
+  productImages: Array(6).fill(null),
+  generatedCanvases: [],
+};
+
+// Restore saved state
+try {
+  const s = JSON.parse(localStorage.getItem('pw_state') || '{}');
+  if (s.sheetId) STATE.sheetId = s.sheetId;
+  if (s.driveFolderId) STATE.driveFolderId = s.driveFolderId;
+  if (s.logoDataUrl) {
+    STATE.logoDataUrl = s.logoDataUrl;
+    const prev = document.getElementById('logoPreview');
+    prev.src = s.logoDataUrl; prev.style.display = 'block';
+    document.querySelector('#logoZone .uz-icon').style.display='none';
+    document.querySelector('#logoZone div:nth-child(2)').style.display='none';
+    document.querySelector('#logoZone .uz-text').style.display='none';
+  }
+  if (s.sheetId) { document.getElementById('sheetId').value = s.sheetId; }
+  if (s.driveFolderId) { document.getElementById('driveFolderId').value = s.driveFolderId; }
+} catch(e){}
+
+function saveState() {
+  try {
+    localStorage.setItem('pw_state', JSON.stringify({
+      sheetId: STATE.sheetId,
+      driveFolderId: STATE.driveFolderId,
+      logoDataUrl: STATE.logoDataUrl,
+    }));
+  } catch(e){}
+}
+
+// ══════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active', ['setup','generate','queue','preview'][i]===name);
+  });
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('pane-'+name).classList.add('active');
+}
+
+function toast(msg, dur=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function setStatus(text, type='idle') {
+  document.getElementById('statusText').textContent = text;
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot' + (type==='busy'?' busy': type==='error'?' error':'');
+}
+
+function log(msg, type='info') {
+  const el = document.getElementById('logLines');
+  if (!el) return;
+  const line = document.createElement('div');
+  line.className = 'log-'+type;
+  line.textContent = (type==='ok'?'✓ ':type==='err'?'✗ ':'→ ') + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressBar').style.width = pct+'%';
+  if (label) document.getElementById('progressLabel').textContent = label;
+}
+
+// Product image grid
+function buildProductGrid() {
+  const grid = document.getElementById('productGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let i=0;i<6;i++) {
+    const slot = document.createElement('div');
+    slot.className = 'img-slot';
+    if (STATE.productImages[i]) {
+      slot.innerHTML = `<img src="${STATE.productImages[i]}"/><button class="rm" onclick="rmProd(event,${i})">✕</button>`;
+    } else {
+      slot.innerHTML = `<input type="file" accept="image/*" onchange="handleProd(event,${i})"><span class="plus">＋</span>`;
+    }
+    grid.appendChild(slot);
+  }
+}
+buildProductGrid();
+
+function handleLogo(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    STATE.logoDataUrl = ev.target.result;
+    const prev = document.getElementById('logoPreview');
+    prev.src = ev.target.result; prev.style.display = 'block';
+    document.querySelector('#logoZone .uz-icon').style.display='none';
+    document.querySelector('#logoZone div:nth-child(2)').style.display='none';
+    document.querySelector('#logoZone .uz-text').style.display='none';
+    saveState();
+    toast('✓ Logo saved');
+  };
+  r.readAsDataURL(f);
+}
+function handleProd(e, i) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { STATE.productImages[i] = ev.target.result; buildProductGrid(); };
+  r.readAsDataURL(f);
+}
+function rmProd(e, i) { e.stopPropagation(); STATE.productImages[i]=null; buildProductGrid(); }
+
+// ══════════════════════════════════════════════════
+// GOOGLE AUTH (OAuth2 PKCE / popup flow)
+// ══════════════════════════════════════════════════
+// NOTE: For production, replace CLIENT_ID with your own Google OAuth client ID.
+// Create at https://console.cloud.google.com → APIs & Services → Credentials
+// Set Authorised JS origins to your domain, redirect_uri = this page URL
+const GOOGLE_CLIENT_ID = ''; // ← FILL IN YOUR OAUTH CLIENT ID
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file profile email';
+
+function connectGoogle() {
+  if (!GOOGLE_CLIENT_ID) {
+    // Demo mode — simulate auth for preview
+    STATE.googleToken = 'DEMO_TOKEN';
+    STATE.userInfo = { name:'Demo User', email:'demo@company.com', picture:'' };
+    updateAuthUI();
+    toast('✓ Connected (demo mode — add OAuth Client ID for real Google integration)');
+    return;
+  }
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: window.location.href.split('?')[0],
+    response_type: 'token',
+    scope: GOOGLE_SCOPES,
+    include_granted_scopes: 'true',
+  });
+  const popup = window.open('https://accounts.google.com/o/oauth2/v2/auth?'+params, 'gauth', 'width=500,height=600');
+  const check = setInterval(() => {
+    try {
+      if (popup.closed) { clearInterval(check); return; }
+      const url = popup.location.href;
+      if (url.includes('access_token')) {
+        clearInterval(check);
+        popup.close();
+        const hash = new URLSearchParams(url.split('#')[1]);
+        STATE.googleToken = hash.get('access_token');
+        fetchGoogleUser();
+      }
+    } catch(e){}
+  }, 300);
+}
+
+async function fetchGoogleUser() {
+  const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    headers: { Authorization: 'Bearer '+STATE.googleToken }
+  });
+  STATE.userInfo = await res.json();
+  updateAuthUI();
+  toast('✓ Signed in as '+STATE.userInfo.email);
+}
+
+function updateAuthUI() {
+  document.getElementById('authNotConnected').style.display = 'none';
+  document.getElementById('authConnected').style.display = 'block';
+  if (STATE.userInfo) {
+    document.getElementById('userName').textContent = STATE.userInfo.name || 'User';
+    document.getElementById('userEmail').textContent = STATE.userInfo.email || '';
+    if (STATE.userInfo.picture) document.getElementById('userAvatar').src = STATE.userInfo.picture;
+  }
+}
+
+function disconnectGoogle() {
+  STATE.googleToken = null; STATE.userInfo = null;
+  document.getElementById('authNotConnected').style.display = 'block';
+  document.getElementById('authConnected').style.display = 'none';
+  toast('Signed out');
+}
+
+// ══════════════════════════════════════════════════
+// SHEETS API
+// ══════════════════════════════════════════════════
+const SHEET_HEADERS = ['Campaign Name','Category','Sub Headline','Coupon Code','Min Order','COD Offer','Prepaid Offer','Product Image URLs','Formats','Variants','Status','Drive Folder Link','Generated At'];
+
+function extractSheetId(input) {
+  const m = input.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : input.trim();
+}
+
+async function connectSheet() {
+  const raw = document.getElementById('sheetId').value.trim();
+  if (!raw) { toast('Enter a Sheet URL or ID'); return; }
+  const id = extractSheetId(raw);
+  STATE.sheetId = id;
+  if (!GOOGLE_CLIENT_ID || !STATE.googleToken || STATE.googleToken==='DEMO_TOKEN') {
+    document.getElementById('sheetStatus').style.display='block';
+    document.getElementById('sheetStatus').innerHTML = `<span class="connected-chip">✓ Sheet ID saved (demo mode)</span>`;
+    saveState(); toast('✓ Sheet connected (demo mode)'); return;
+  }
+  // Real: check sheet exists + ensure headers
+  try {
+    const res = await gSheets('GET', `/${id}/values/A1:M1`);
+    const row = res.values?.[0] || [];
+    const needsHeaders = row.length === 0 || row[0] !== 'Campaign Name';
+    if (needsHeaders) await gSheets('PUT', `/${id}/values/A1:M1?valueInputOption=RAW`, {values:[SHEET_HEADERS]});
+    document.getElementById('sheetStatus').style.display='block';
+    document.getElementById('sheetStatus').innerHTML = `<span class="connected-chip">✓ Sheet connected & headers ready</span>`;
+    saveState(); toast('✓ Sheet ready');
+  } catch(e) {
+    toast('Error: '+e.message);
+  }
+}
+
+async function gSheets(method, path, body) {
+  const opts = { method, headers: { Authorization:'Bearer '+STATE.googleToken, 'Content-Type':'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets'+path, opts);
+  return r.json();
+}
+
+async function getSheetRows() {
+  if (!STATE.sheetId || !STATE.googleToken || STATE.googleToken==='DEMO_TOKEN') return getDemoRows();
+  const res = await gSheets('GET', `/${STATE.sheetId}/values/A:M`);
+  const rows = res.values || [];
+  return rows.slice(1).map((r,i) => ({
+    row: i+2, campaign:r[0]||'', category:r[1]||'', subHook:r[2]||'',
+    coupon:r[3]||'', minOrder:r[4]||'', cod:r[5]||'', prepaid:r[6]||'',
+    imgUrls:r[7]||'', formats:r[8]||'1080x1920,1200x1200', variants:r[9]||'2',
+    status:r[10]||'Pending', driveLink:r[11]||'', generatedAt:r[12]||''
+  }));
+}
+
+function getDemoRows() {
+  return [
+    { row:2,campaign:'Big Savings Days – JEE',category:'JEE Books',subHook:'',coupon:'SAVEBIG',minOrder:'₹500',cod:'10% Off up to ₹150 on COD',prepaid:'15% Off up to ₹250 on Prepaid',imgUrls:'',formats:'1080x1920,1200x1200',variants:'2',status:'Pending',driveLink:'' },
+    { row:3,campaign:'Big Savings Days – NEET',category:'NEET Books',subHook:'',coupon:'SAVEBIG',minOrder:'₹500',cod:'10% Off up to ₹150 on COD',prepaid:'15% Off up to ₹250 on Prepaid',imgUrls:'',formats:'1080x1920',variants:'2',status:'Done',driveLink:'https://drive.google.com/drive/folders/demo' },
+  ];
+}
+
+async function writeSheetRow(rowNum, status, driveLink) {
+  if (!STATE.sheetId || STATE.googleToken==='DEMO_TOKEN') return;
+  await gSheets('PUT', `/${STATE.sheetId}/values/K${rowNum}:M${rowNum}?valueInputOption=RAW`, {
+    values:[[status, driveLink, new Date().toLocaleString('en-IN')]]
+  });
+}
+
+async function refreshQueue() {
+  if (!STATE.sheetId) { toast('Connect a sheet first in Setup'); return; }
+  setStatus('Loading queue...','busy');
+  try {
+    const rows = await getSheetRows();
+    renderQueue(rows);
+    setStatus('Ready');
+  } catch(e) {
+    setStatus('Error','error'); toast('Error: '+e.message);
+  }
+}
+
+function renderQueue(rows) {
+  if (!rows.length) {
+    document.getElementById('queueContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No rows found. Add rows to your Google Sheet.</div>';
+    return;
+  }
+  let html = '<div class="queue-wrap"><table><tr><th>#</th><th>Campaign</th><th>Category</th><th>Formats</th><th>Variants</th><th>Status</th><th>Drive Link</th><th></th></tr>';
+  rows.forEach(r => {
+    const badge = `<span class="badge-status badge-${r.status==='Pending'?'pending':r.status==='Processing'?'processing':r.status==='Done'?'done':'error'}">${r.status}</span>`;
+    const link = r.driveLink ? `<div class="link-cell"><a href="${r.driveLink}" target="_blank">Open Folder ↗</a></div>` : '—';
+    html += `<tr>
+      <td style="color:var(--muted)">${r.row-1}</td>
+      <td style="font-weight:600">${r.campaign||'—'}</td>
+      <td>${r.category||'—'}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.formats||'—'}</td>
+      <td style="text-align:center">${r.variants||'—'}</td>
+      <td>${badge}</td>
+      <td>${link}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick='processRow(${JSON.stringify(r)})'>▶ Run</button></td>
+    </tr>`;
+  });
+  html += '</table></div>';
+  document.getElementById('queueContent').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════
+// DRIVE API
+// ══════════════════════════════════════════════════
+async function ensureRootFolder() {
+  if (STATE.driveFolderId) return STATE.driveFolderId;
+  if (STATE.googleToken==='DEMO_TOKEN') return 'demo_folder_id';
+  // Find or create root folder
+  const q = `name='PW Ad Creatives' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`, {
+    headers:{ Authorization:'Bearer '+STATE.googleToken }
+  });
+  const data = await res.json();
+  if (data.files?.length) { STATE.driveFolderId = data.files[0].id; return STATE.driveFolderId; }
+  // Create it
+  const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method:'POST', headers:{ Authorization:'Bearer '+STATE.googleToken,'Content-Type':'application/json' },
+    body: JSON.stringify({ name:'PW Ad Creatives', mimeType:'application/vnd.google-apps.folder' })
+  });
+  const folder = await cr.json();
+  STATE.driveFolderId = folder.id;
+  return folder.id;
+}
+
+async function createCampaignFolder(campaignName, parentId) {
+  if (STATE.googleToken==='DEMO_TOKEN') return { id:'demo_campaign_folder', url:'https://drive.google.com/drive/folders/demo' };
+  const res = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method:'POST', headers:{ Authorization:'Bearer '+STATE.googleToken,'Content-Type':'application/json' },
+    body: JSON.stringify({ name: campaignName, mimeType:'application/vnd.google-apps.folder', parents:[parentId] })
+  });
+  const folder = await res.json();
+  return { id: folder.id, url:`https://drive.google.com/drive/folders/${folder.id}` };
+}
+
+async function uploadPNG(blob, filename, folderId) {
+  if (STATE.googleToken==='DEMO_TOKEN') return 'https://drive.google.com/file/demo';
+  const meta = JSON.stringify({ name: filename, parents:[folderId] });
+  const form = new FormData();
+  form.append('metadata', new Blob([meta],{type:'application/json'}));
+  form.append('file', blob, filename);
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
+    method:'POST', headers:{ Authorization:'Bearer '+STATE.googleToken }, body:form
+  });
+  const f = await res.json();
+  return f.webViewLink || `https://drive.google.com/file/d/${f.id}`;
+}
+
+// ══════════════════════════════════════════════════
+// AI COPY GENERATION
+// ══════════════════════════════════════════════════
+async function generateCopyWithAI(rowData) {
+  const prompt = `You are a performance marketing creative director for PW Store (Physics Wallah's study material store). Generate ad copy for these exact 4 creative layout variants. Respond ONLY with valid JSON, no markdown.
+
+Campaign: "${rowData.campaign}"
+Category: "${rowData.category}"
+Coupon: "${rowData.coupon||'SAVEBIG'}"
+COD Offer: "${rowData.cod}"
+Prepaid Offer: "${rowData.prepaid}"
+
+Generate 4 variants. Each variant maps to one of the 4 layout styles from PW Store's winning creatives.
+
+{
+  "variants": [
+    {
+      "id":1,
+      "style":"pill",
+      "campaign_line":"${rowData.campaign.toUpperCase()}",
+      "offer_line":"OFFER IS LIVE",
+      "study_line":"Study Smartly",
+      "with_line":"WITH PW ${(rowData.category).toUpperCase()} BOOKS"
+    },
+    {
+      "id":2,
+      "style":"bare",
+      "campaign_line":"CAMPAIGN_NAME_CAPS",
+      "offer_line":"OFFER IS LIVE",
+      "study_line":"Study Smartly",
+      "with_line":"WITH PW ${(rowData.category).toUpperCase()} BOOKS"
+    },
+    {
+      "id":3,
+      "style":"banner",
+      "campaign_line":"CAMPAIGN_NAME_CAPS",
+      "offer_line":"OFFER IS LIVE",
+      "study_line":"Study Smartly",
+      "with_line":"WITH PW ${(rowData.category).toUpperCase()} BOOKS"
+    },
+    {
+      "id":4,
+      "style":"camera",
+      "campaign_line":"CAMPAIGN_NAME_CAPS",
+      "offer_line":"LIVE",
+      "study_line":"Study Smartly",
+      "with_line":"WITH PW ${(rowData.category).toUpperCase()} BOOKS"
+    }
+  ]
+}
+
+For campaign_line: use the actual campaign name in ALL CAPS. Keep it short (3-5 words max). Make variant 2,3,4 slightly different phrasing if it fits.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:800, messages:[{role:'user',content:prompt}] })
+    });
+    const data = await res.json();
+    const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    const clean = text.replace(/```json|```/g,'').trim();
+    return JSON.parse(clean);
+  } catch(e) {
+    // Fallback copy
+    const camp = rowData.campaign.toUpperCase();
+    const cat = rowData.category.toUpperCase();
+    return { variants:[
+      {id:1,style:'pill',campaign_line:camp,offer_line:'OFFER IS LIVE',study_line:'Study Smartly',with_line:`WITH PW ${cat} BOOKS`},
+      {id:2,style:'bare',campaign_line:camp,offer_line:'OFFER IS LIVE',study_line:'Study Smartly',with_line:`WITH PW ${cat} BOOKS`},
+      {id:3,style:'banner',campaign_line:camp,offer_line:'OFFER IS LIVE',study_line:'Study Smartly',with_line:`WITH PW ${cat} BOOKS`},
+      {id:4,style:'camera',campaign_line:camp,offer_line:'LIVE',study_line:'Study Smartly',with_line:`WITH PW ${cat} BOOKS`},
+    ]};
+  }
+}
+
+// ══════════════════════════════════════════════════
+// CANVAS RENDERING — pixel-faithful to winning creatives
+// ══════════════════════════════════════════════════
+function lerp(a,b,t){return a+(b-a)*t}
+
+async function loadImg(src) {
+  return new Promise((res,rej) => {
+    const img = new Image(); img.crossOrigin='anonymous';
+    img.onload=()=>res(img); img.onerror=()=>res(null);
+    img.src=src;
+  });
+}
+
+// Master render function — draws one creative on a canvas element
+async function renderCreative(variant, rowData, W, H) {
+  const canvas = document.createElement('canvas');
+  canvas.width=W; canvas.height=H;
+  const ctx = canvas.getContext('2d');
+  const S = W/1080; // scale factor
+
+  // ── BACKGROUND ──
+  // Light blue-white gradient
+  const bgGrad = ctx.createLinearGradient(0,0,W,H);
+  bgGrad.addColorStop(0,'#e4f4f8');
+  bgGrad.addColorStop(0.5,'#edf8fb');
+  bgGrad.addColorStop(1,'#f4fbfd');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0,0,W,H);
+
+  // Subtle arc curves in background (like in originals)
+  ctx.save();
+  ctx.globalAlpha=0.06;
+  ctx.strokeStyle='#1a7f78';
+  ctx.lineWidth=W*0.004;
+  // Large arc top-right
+  ctx.beginPath(); ctx.arc(W*0.95,H*0.05,W*0.6,Math.PI*0.3,Math.PI*0.9); ctx.stroke();
+  // Large arc bottom-left
+  ctx.beginPath(); ctx.arc(W*0.05,H*0.9,W*0.55,Math.PI*1.3,Math.PI*1.8); ctx.stroke();
+  ctx.restore();
+
+  // ── BOTTOM SECTION ──
+  // Variants 3 & 4 have a large colored bottom arc behind books
+  if (variant.style==='banner') {
+    // Yellow arcs bottom corners (like Creative 3)
+    ctx.save();
+    ctx.fillStyle='#f0c030';
+    ctx.globalAlpha=0.85;
+    ctx.beginPath(); ctx.arc(-W*0.05,H*1.02,W*0.38,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(W*1.05,H*1.02,W*0.38,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  } else if (variant.style==='camera') {
+    // Teal bottom arc
+    ctx.save();
+    ctx.fillStyle='#1a7f78';
+    ctx.beginPath();
+    ctx.arc(W*0.5, H*1.05, W*0.65, Math.PI, Math.PI*2); 
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ── TOP-LEFT RIBBON (diagonal yellow tape) ──
+  ctx.save();
+  ctx.translate(-W*0.02, H*0.07);
+  ctx.rotate(-Math.PI/5.2);
+  // 5 ribbon strips
+  for (let i=0;i<6;i++) {
+    const y = i*W*0.055;
+    // Gold strip
+    ctx.fillStyle='#f5c432';
+    ctx.fillRect(0, y, W*1.1, W*0.042);
+    // Text on strip
+    ctx.fillStyle='#3a2800';
+    ctx.font=`700 ${Math.round(W*0.022)}px "Segoe UI",Arial,sans-serif`;
+    ctx.textBaseline='middle';
+    let x=W*0.02;
+    while(x<W*1.05) {
+      ctx.fillText(rowData.campaign.toUpperCase()+'  ·  ', x, y+W*0.021);
+      x += ctx.measureText(rowData.campaign.toUpperCase()+'  ·  ').width;
+    }
+  }
+  ctx.restore();
+
+  // ── TOP-RIGHT TEAL CORNER ──
+  ctx.save();
+  ctx.fillStyle='#1a7f78';
+  // Rounded corner shape
+  const cw=W*0.14, ch=H*0.075;
+  ctx.beginPath();
+  ctx.moveTo(W,0); ctx.lineTo(W-cw,0); ctx.quadraticCurveTo(W,0,W,ch); ctx.closePath();
+  ctx.fill();
+  // Dashed small rect inside
+  ctx.strokeStyle='rgba(255,255,255,0.6)';
+  ctx.lineWidth=W*0.006;
+  ctx.setLineDash([W*0.012,W*0.008]);
+  ctx.strokeRect(W-W*0.075, H*0.015, W*0.045, H*0.028);
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // ── PW STORE LOGO ──
+  const logoY = H*0.115;
+  if (STATE.logoDataUrl) {
+    const logoImg = await loadImg(STATE.logoDataUrl);
+    if (logoImg) {
+      const lh = H*0.055;
+      const lw = logoImg.naturalWidth/logoImg.naturalHeight*lh;
+      ctx.drawImage(logoImg, W/2-lw/2, logoY-lh/2, lw, lh);
+    }
+  } else {
+    // Draw PW Store text logo
+    const cx=W/2, cy=logoY;
+    // Circle
+    ctx.save();
+    ctx.fillStyle='#111';
+    ctx.beginPath(); ctx.arc(cx-W*0.06, cy, H*0.025, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=W*0.006;
+    ctx.stroke();
+    // PW text in circle
+    ctx.fillStyle='#fff'; ctx.font=`900 ${Math.round(H*0.019)}px "Segoe UI",Arial,sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('PW', cx-W*0.06, cy);
+    // Store text
+    ctx.fillStyle='#111'; ctx.font=`700 ${Math.round(H*0.024)}px "Segoe UI",Arial,sans-serif`;
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText('Store', cx-W*0.02, cy);
+    ctx.restore();
+  }
+
+  // ── HOOK SECTION — 4 variant styles ──
+  const hookTop = H*0.175;
+
+  if (variant.style==='pill') {
+    // Style 1: Campaign name in teal rounded pill/rectangle, then "OFFER IS 🔴LIVE◀" below
+    const pillW=W*0.78, pillH=H*0.075;
+    const pillX=(W-pillW)/2, pillY=hookTop;
+    // Teal pill with rounded corners
+    ctx.save();
+    ctx.fillStyle='#1a7f78';
+    roundRect(ctx, pillX, pillY, pillW, pillH, pillH/2);
+    ctx.fill();
+    // Dashed border inset
+    ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=W*0.005; ctx.setLineDash([W*0.015,W*0.008]);
+    roundRect(ctx, pillX+W*0.012, pillY+H*0.007, pillW-W*0.024, pillH-H*0.014, pillH/2-W*0.006);
+    ctx.stroke(); ctx.setLineDash([]);
+    // Campaign name text
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font=`900 ${Math.round(H*0.046)}px "Arial Black",Arial,sans-serif`;
+    fitText(ctx, variant.campaign_line, pillX, pillY, pillW, pillH);
+    ctx.restore();
+    // "OFFER IS LIVE" line
+    drawOfferIsLive(ctx, W, H, hookTop+pillH+H*0.012, 'pill');
+
+  } else if (variant.style==='bare') {
+    // Style 2: Campaign name bare (large teal text), then OFFER IS LIVE in red
+    ctx.save();
+    ctx.fillStyle='#1a7f78'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.font=`900 ${Math.round(H*0.055)}px "Arial Black",Arial,sans-serif`;
+    const lines = wrapText(ctx, variant.campaign_line, W*0.88, W/2);
+    lines.forEach((ln,i) => ctx.fillText(ln, W/2, hookTop + i*H*0.058));
+    ctx.restore();
+    drawOfferIsLive(ctx, W, H, hookTop + lines.length*H*0.058 + H*0.008, 'bare');
+
+  } else if (variant.style==='banner') {
+    // Style 3: Campaign name bare, then "OFFER IS LIVE" in a red banner/ticket shape
+    ctx.save();
+    ctx.fillStyle='#1a7f78'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.font=`900 ${Math.round(H*0.055)}px "Arial Black",Arial,sans-serif`;
+    const lines = wrapText(ctx, variant.campaign_line, W*0.88, W/2);
+    lines.forEach((ln,i) => ctx.fillText(ln, W/2, hookTop + i*H*0.058));
+    ctx.restore();
+    // Red banner for "OFFER IS LIVE"
+    const bannerY = hookTop + lines.length*H*0.058 + H*0.01;
+    const bW=W*0.72, bH=H*0.062;
+    ctx.save();
+    ctx.fillStyle='#d42b2b';
+    roundRect(ctx,(W-bW)/2, bannerY, bW, bH, bH*0.2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font=`900 ${Math.round(H*0.04)}px "Arial Black",Arial,sans-serif`;
+    ctx.fillText('OFFER IS', W/2-bW*0.12, bannerY+bH/2);
+    // LIVE badge inside banner
+    ctx.fillStyle='#fff'; ctx.fillRect(W/2+bW*0.06, bannerY+bH*0.12, bW*0.26, bH*0.76);
+    ctx.fillStyle='#d42b2b'; ctx.font=`900 ${Math.round(H*0.038)}px "Arial Black",Arial,sans-serif`;
+    ctx.fillText('Live', W/2+bW*0.19, bannerY+bH/2);
+    // Camera icon
+    ctx.fillStyle='#d42b2b'; ctx.font=`${Math.round(H*0.04)}px sans-serif`;
+    ctx.fillText('◀', W/2+bW*0.38, bannerY+bH/2+H*0.002);
+    ctx.restore();
+
+  } else if (variant.style==='camera') {
+    // Style 4: Campaign name bare, OFFER IS + camera pill LIVE with confetti
+    // Confetti streaks
+    drawConfetti(ctx, W, H);
+    ctx.save();
+    ctx.fillStyle='#1a7f78'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.font=`900 ${Math.round(H*0.055)}px "Arial Black",Arial,sans-serif`;
+    const lines = wrapText(ctx, variant.campaign_line, W*0.88, W/2);
+    lines.forEach((ln,i) => ctx.fillText(ln, W/2, hookTop + i*H*0.058));
+    ctx.restore();
+    const offerY = hookTop + lines.length*H*0.058 + H*0.01;
+    // "OFFER IS" red text + camera pill
+    ctx.save();
+    ctx.fillStyle='#d42b2b'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font=`900 ${Math.round(H*0.05)}px "Arial Black",Arial,sans-serif`;
+    ctx.fillText('OFFER IS', W/2-W*0.12, offerY+H*0.028);
+    // Camera pill
+    const pW=W*0.36, pH=H*0.052, pX=W/2+W*0.04, pY=offerY+H*0.003;
+    ctx.fillStyle='#d42b2b';
+    roundRect(ctx,pX,pY,pW,pH,pH/2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font=`${Math.round(pH*0.6)}px sans-serif`;
+    ctx.textAlign='left'; ctx.fillText('🎥', pX+pW*0.05, pY+pH*0.62);
+    ctx.font=`900 ${Math.round(pH*0.58)}px "Arial Black",Arial,sans-serif`;
+    ctx.textAlign='center'; ctx.fillText('LIVE', pX+pW*0.65, pY+pH/2);
+    ctx.restore();
+  }
+
+  // ── SUB-HEADLINE: "Study Smartly" + "WITH PW X BOOKS" ──
+  // Find where to place it based on style
+  const subY = getSubY(variant, H, hookTop);
+
+  // Divider lines + "Study Smartly" italic
+  ctx.save();
+  ctx.strokeStyle='#1a7f78'; ctx.lineWidth=W*0.003; ctx.globalAlpha=0.5;
+  ctx.beginPath(); ctx.moveTo(W*0.08,subY); ctx.lineTo(W*0.3,subY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W*0.7,subY); ctx.lineTo(W*0.92,subY); ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  ctx.fillStyle='#333'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`italic 600 ${Math.round(H*0.026)}px "Segoe UI",Georgia,serif`;
+  ctx.fillText(variant.study_line, W/2, subY);
+  ctx.restore();
+
+  // "WITH PW X BOOKS" big dark text
+  ctx.save();
+  ctx.fillStyle='#222'; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.font=`900 ${Math.round(H*0.05)}px "Arial Black",Arial,sans-serif`;
+  const withLines = wrapText(ctx, variant.with_line, W*0.92, W/2);
+  withLines.forEach((ln,i) => ctx.fillText(ln, W/2, subY+H*0.012+i*H*0.052));
+  ctx.restore();
+
+  const afterWithY = subY + H*0.016 + withLines.length*H*0.052;
+
+  // ── COUPON CODE ──
+  const couponY = afterWithY + H*0.01;
+  if (rowData.coupon) {
+    ctx.save();
+    ctx.fillStyle='#555'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.font=`${Math.round(H*0.022)}px "Segoe UI",Arial,sans-serif`;
+    ctx.fillText('Use Coupon Code', W/2, couponY);
+    // Big red coupon text
+    ctx.fillStyle='#d42b2b'; ctx.textBaseline='top';
+    ctx.font=`900 ${Math.round(H*0.065)}px "Arial Black",Arial,sans-serif`;
+    ctx.fillText(rowData.coupon, W/2, couponY+H*0.025);
+    ctx.restore();
+
+    if (rowData.minOrder) {
+      // Teal cart pill
+      const pillY2 = couponY+H*0.095;
+      const pW2=W*0.52, pH2=H*0.038;
+      ctx.save();
+      ctx.fillStyle='#1a7f78';
+      roundRect(ctx,(W-pW2)/2,pillY2,pW2,pH2,pH2/2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font=`700 ${Math.round(H*0.024)}px "Segoe UI",Arial,sans-serif`;
+      ctx.fillText('🛒  Min. Order: '+rowData.minOrder, W/2, pillY2+pH2/2);
+      ctx.restore();
+    }
+  }
+
+  // ── OFFER BOXES (COD + Prepaid dashed) ──
+  const boxY = couponY + (rowData.coupon ? H*0.14 : H*0.03);
+  if (rowData.cod || rowData.prepaid) {
+    const bxW=W*0.36, bxH=H*0.07, gap=W*0.06;
+    const leftX=(W-bxW*2-gap)/2;
+    const rightX=leftX+bxW+gap;
+    // Left box
+    ctx.save();
+    ctx.strokeStyle='#1a7f78'; ctx.lineWidth=W*0.004; ctx.setLineDash([W*0.012,W*0.007]);
+    ctx.strokeRect(leftX, boxY, bxW, bxH);
+    ctx.setLineDash([]);
+    ctx.fillStyle='#222'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`600 ${Math.round(H*0.019)}px "Segoe UI",Arial,sans-serif`;
+    wrapBoxText(ctx, rowData.cod, leftX, boxY, bxW, bxH, H*0.02);
+    // Right box
+    ctx.strokeStyle='#1a7f78'; ctx.setLineDash([W*0.012,W*0.007]);
+    ctx.strokeRect(rightX, boxY, bxW, bxH);
+    ctx.setLineDash([]);
+    wrapBoxText(ctx, rowData.prepaid, rightX, boxY, bxW, bxH, H*0.02);
+    // Connecting line
+    ctx.strokeStyle='#888'; ctx.lineWidth=W*0.003; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(leftX+bxW,boxY+bxH/2); ctx.lineTo(rightX,boxY+bxH/2); ctx.stroke();
+    // Dot in middle
+    ctx.fillStyle='#888';
+    ctx.beginPath(); ctx.arc(W/2, boxY+bxH/2, W*0.008, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // ── HOURGLASS decoration (left edge, ~60% height) ──
+  drawHourglass(ctx, W*0.045, H*0.63, H*0.085, S);
+
+  // ── PRODUCT IMAGES on oval platform ──
+  const productImgs = STATE.productImages.filter(Boolean);
+  const platformY = H*0.775;
+  // Platform (white oval)
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.92)';
+  ctx.shadowColor='rgba(0,0,0,0.12)'; ctx.shadowBlur=20; ctx.shadowOffsetY=8;
+  ctx.beginPath(); ctx.ellipse(W/2, platformY+H*0.048, W*0.46, H*0.028, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  if (productImgs.length > 0) {
+    // Draw books on platform
+    const imgs = await Promise.all(productImgs.slice(0,5).map(loadImg));
+    const validImgs = imgs.filter(Boolean);
+    const bookH = H*0.175;
+    const totalW = validImgs.length * bookH*0.65;
+    const startX = (W-totalW)/2;
+    for (let i=0;i<validImgs.length;i++) {
+      const img = validImgs[i];
+      const bw = bookH * img.naturalWidth/img.naturalHeight;
+      const bx = startX + i*(totalW/validImgs.length) + (totalW/validImgs.length-bw)/2;
+      const by = platformY - bookH + H*0.01;
+      // Shadow
+      ctx.save();
+      ctx.shadowColor='rgba(0,0,0,0.25)'; ctx.shadowBlur=12; ctx.shadowOffsetX=3; ctx.shadowOffsetY=6;
+      ctx.drawImage(img, bx, by, bw, bookH);
+      ctx.restore();
+    }
+  } else {
+    // Placeholder book spines
+    const bookColors=['#2d5aa0','#1a7f78','#8b1a1a','#2d8b2d','#7b2d8b'];
+    const nbk=4, bkW=W*0.11, bkH=H*0.165;
+    const stX=(W-nbk*bkW*1.15)/2;
+    for(let i=0;i<nbk;i++){
+      ctx.save();
+      ctx.fillStyle=bookColors[i%bookColors.length];
+      ctx.shadowColor='rgba(0,0,0,0.25)'; ctx.shadowBlur=8; ctx.shadowOffsetX=2; ctx.shadowOffsetY=4;
+      ctx.fillRect(stX+i*bkW*1.15, platformY-bkH+H*0.008, bkW, bkH);
+      ctx.restore();
+    }
+  }
+
+  // ── BOTTOM TEAL BAR ──
+  ctx.save();
+  const barH = H*0.03;
+  ctx.fillStyle='#1a7f78';
+  ctx.fillRect(0, H-barH, W, barH);
+  ctx.restore();
+
+  return canvas;
+}
+
+// ── Helper: draw "OFFER IS LIVE" for pill and bare styles ──
+function drawOfferIsLive(ctx, W, H, y, style) {
+  ctx.save();
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  // "OFFER IS" in red
+  ctx.fillStyle='#d42b2b';
+  ctx.font=`900 ${Math.round(H*0.05)}px "Arial Black",Arial,sans-serif`;
+  ctx.fillText('OFFER IS', W/2-W*0.08, y);
+  // LIVE badge (white box with red text + camera arrow)
+  const liveW=W*0.24, liveH=H*0.046, liveX=W/2+W*0.06, liveY=y;
+  ctx.fillStyle='#fff';
+  roundRect(ctx,liveX,liveY,liveW,liveH,liveH*0.18); ctx.fill();
+  ctx.strokeStyle='#d42b2b'; ctx.lineWidth=W*0.005;
+  roundRect(ctx,liveX,liveY,liveW,liveH,liveH*0.18); ctx.stroke();
+  ctx.fillStyle='#d42b2b'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`italic 900 ${Math.round(H*0.038)}px "Arial Black",Arial,sans-serif`;
+  ctx.fillText('Live', liveX+liveW*0.42, liveY+liveH/2);
+  ctx.fillStyle='#d42b2b'; ctx.font=`${Math.round(H*0.038)}px sans-serif`;
+  ctx.textAlign='left';
+  ctx.fillText('◀', liveX+liveW*0.76, liveY+liveH/2+H*0.003);
+  ctx.restore();
+}
+
+function getSubY(variant, H, hookTop) {
+  const offsets = {pill: H*0.31, bare: H*0.32, banner: H*0.32, camera: H*0.315};
+  return offsets[variant.style] || H*0.32;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+function fitText(ctx, text, rx, ry, rw, rh) {
+  let fs = Math.round(rh*0.58);
+  ctx.font=`900 ${fs}px "Arial Black",Arial,sans-serif`;
+  while(ctx.measureText(text).width > rw*0.88 && fs>12) { fs--; ctx.font=`900 ${fs}px "Arial Black",Arial,sans-serif`; }
+  ctx.fillText(text, rx+rw/2, ry+rh/2);
+}
+
+function wrapText(ctx, text, maxW, cx) {
+  const words=text.split(' ');
+  const lines=[]; let cur='';
+  for(const w of words){
+    const test=cur?cur+' '+w:w;
+    if(ctx.measureText(test).width>maxW && cur){lines.push(cur);cur=w;}
+    else cur=test;
+  }
+  if(cur)lines.push(cur);
+  return lines;
+}
+
+function wrapBoxText(ctx, text, bx, by, bw, bh, lineH) {
+  const words=text.split(' ');
+  const lines=[]; let cur='';
+  ctx.font=`600 ${Math.round(lineH*0.9)}px "Segoe UI",Arial,sans-serif`;
+  for(const w of words){
+    const test=cur?cur+' '+w:w;
+    if(ctx.measureText(test).width>bw*0.88 && cur){lines.push(cur);cur=w;}
+    else cur=test;
+  }
+  if(cur)lines.push(cur);
+  const total=lines.length*lineH;
+  const startY=by+(bh-total)/2+lineH/2;
+  lines.forEach((l,i)=>ctx.fillText(l,bx+bw/2,startY+i*lineH));
+}
+
+function drawHourglass(ctx, cx, cy, size, S) {
+  ctx.save(); ctx.globalAlpha=0.35;
+  ctx.strokeStyle='#c4a060'; ctx.lineWidth=size*0.05; ctx.fillStyle='#c4a060';
+  const hw=size*0.45, hh=size*0.9;
+  // Top triangle
+  ctx.beginPath(); ctx.moveTo(cx-hw,cy-hh/2); ctx.lineTo(cx+hw,cy-hh/2); ctx.lineTo(cx,cy); ctx.closePath(); ctx.stroke();
+  ctx.globalAlpha=0.12; ctx.fill(); ctx.globalAlpha=0.35;
+  // Bottom triangle
+  ctx.beginPath(); ctx.moveTo(cx-hw,cy+hh/2); ctx.lineTo(cx+hw,cy+hh/2); ctx.lineTo(cx,cy); ctx.closePath(); ctx.stroke();
+  ctx.globalAlpha=0.12; ctx.fill(); ctx.globalAlpha=0.35;
+  // Frame
+  ctx.fillStyle='none'; ctx.strokeStyle='#c4a060';
+  ctx.strokeRect(cx-hw*1.1,cy-hh/2-size*0.06,hw*2.2,size*0.06);
+  ctx.strokeRect(cx-hw*1.1,cy+hh/2,hw*2.2,size*0.06);
+  ctx.restore();
+}
+
+function drawConfetti(ctx, W, H) {
+  const pieces=[{x:0.72,y:0.09,r:0.012,a:-0.4,c:'#f5c432'},{x:0.78,y:0.16,r:0.008,a:0.3,c:'#f5c432'},{x:0.68,y:0.13,r:0.006,a:-0.8,c:'#ff9060'},{x:0.85,y:0.08,r:0.01,a:0.6,c:'#f5c432'},{x:0.15,y:0.06,r:0.007,a:-0.3,c:'#f5c432'}];
+  pieces.forEach(p=>{
+    ctx.save();
+    ctx.translate(p.x*W,p.y*H); ctx.rotate(p.a);
+    ctx.fillStyle=p.c; ctx.globalAlpha=0.8;
+    ctx.fillRect(-p.r*W,-p.r*W*0.4,p.r*W*2,p.r*W*0.8);
+    ctx.restore();
+  });
+}
+
+// ══════════════════════════════════════════════════
+// MAIN GENERATE FLOW
+// ══════════════════════════════════════════════════
+async function generateNow(rowData, previewOnly=false) {
+  const data = rowData || collectFormData();
+  if (!data.campaign || !data.category) { toast('Campaign name and category are required'); return; }
+
+  const formats = getSelectedFormats();
+  const variantCount = parseInt(document.getElementById('g_variants').value);
+
+  document.getElementById('progressCard').style.display='block';
+  document.getElementById('logLines').innerHTML='';
+  setProgress(0,'Starting...');
+  setStatus('Generating...','busy');
+
+  log('Asking AI for copy variants...','info');
+  const copyData = await generateCopyWithAI(data);
+  log('AI copy ready','ok');
+  setProgress(15,'Rendering creatives...');
+
+  STATE.generatedCanvases=[];
+  const variants = copyData.variants.slice(0, variantCount);
+  let done=0;
+  const total=formats.length*variants.length;
+
+  const results=[];
+  for(const fmt of formats){
+    const [W,H]=fmt.split('x').map(Number);
+    for(const variant of variants){
+      log(`Rendering ${fmt} · Variant ${variant.id} (${variant.style})...`,'info');
+      const canvas = await renderCreative(variant, data, W, H);
+      STATE.generatedCanvases.push({canvas, label:`${data.campaign}_V${variant.id}_${fmt}`, fmt});
+      results.push({canvas, label:`${data.campaign}_V${variant.id}_${fmt}`, fmt, variant});
+      done++;
+      setProgress(15+Math.round(done/total*60), `Rendered ${done}/${total}`);
+      log(`Done: ${fmt} V${variant.id}`,'ok');
+    }
+  }
+
+  // Show preview
+  renderPreviewGrid(results);
+  switchTab('preview');
+
+  if (!previewOnly && STATE.googleToken && STATE.googleToken!=='DEMO_TOKEN') {
+    setProgress(75,'Uploading to Google Drive...');
+    log('Creating Drive folder...','info');
+    const rootId = await ensureRootFolder();
+    const campaignFolder = await createCampaignFolder(data.campaign, rootId);
+    log(`Drive folder created: ${campaignFolder.url}`,'ok');
+
+    let uploaded=0;
+    for(const r of results){
+      const blob = await canvasToBlob(r.canvas);
+      const url = await uploadPNG(blob, r.label+'.png', campaignFolder.id);
+      log(`Uploaded ${r.label}`,'ok');
+      uploaded++;
+      setProgress(75+Math.round(uploaded/results.length*20), `Uploading ${uploaded}/${results.length}`);
+    }
+
+    // Write back to sheet
+    if (rowData?.row && STATE.sheetId) {
+      await writeSheetRow(rowData.row, 'Done', campaignFolder.url);
+      log('Sheet updated with Drive link','ok');
+    }
+
+    setProgress(100,'✓ All done!');
+    setStatus('Done');
+    toast(`✓ ${results.length} creatives uploaded to Drive`);
+    log('Drive folder: '+campaignFolder.url,'ok');
+  } else {
+    setProgress(100, previewOnly ? '✓ Preview ready' : '✓ Rendered (connect Google to upload)');
+    setStatus('Done');
+    toast(previewOnly ? '✓ Preview ready — check Preview tab' : '✓ Creatives rendered — connect Google to upload');
+  }
+}
+
+async function generatePreviewOnly() {
+  await generateNow(null, true);
+}
+
+function collectFormData() {
+  return {
+    campaign: document.getElementById('g_campaign').value.trim(),
+    category: document.getElementById('g_category').value.trim(),
+    subHook: document.getElementById('g_subhook').value.trim(),
+    coupon: document.getElementById('g_coupon').value.trim(),
+    minOrder: document.getElementById('g_minorder').value.trim(),
+    cod: document.getElementById('g_cod').value.trim(),
+    prepaid: document.getElementById('g_prepaid').value.trim(),
+  };
+}
+
+function getSelectedFormats() {
+  return Array.from(document.querySelectorAll('#formatChecks input[type=checkbox]:checked')).map(c=>c.value);
+}
+
+function canvasToBlob(canvas) {
+  return new Promise(res => canvas.toBlob(res, 'image/png'));
+}
+
+// ══════════════════════════════════════════════════
+// PREVIEW RENDERING
+// ══════════════════════════════════════════════════
+function renderPreviewGrid(results) {
+  const el = document.getElementById('previewContent');
+  document.getElementById('previewEmpty').style.display='none';
+  el.style.display='block';
+
+  // Group by format
+  const byFmt={};
+  results.forEach(r=>{ (byFmt[r.fmt]=byFmt[r.fmt]||[]).push(r); });
+
+  let html='';
+  for(const [fmt,items] of Object.entries(byFmt)){
+    const [W,H]=fmt.split('x').map(Number);
+    const ph=Math.min(280,Math.round(H*(220/W)));
+    const pw=Math.round(W*(ph/H));
+    html+=`<div class="preview-block"><h4>📐 ${fmt}</h4><div style="display:flex;flex-wrap:wrap;gap:12px">`;
+    items.forEach((r,i)=>{
+      const id='prev_'+fmt.replace('x','_')+'_'+i;
+      html+=`<div><div class="canvas-wrap" id="${id}w" style="width:${pw}px"><canvas id="${id}" width="${pw}" height="${ph}" style="display:block"></canvas><button class="dl-btn" onclick="dlCanvas('${id}','${r.label}')">⬇ Download</button></div><div style="font-size:10px;color:var(--muted);margin-top:5px;text-align:center">Variant ${i+1} · ${r.variant.style}</div></div>`;
+    });
+    html+=`</div></div>`;
+  }
+  el.innerHTML=html;
+
+  // Draw scaled-down canvases
+  results.forEach((r,idx)=>{
+    const [W,H]=r.fmt.split('x').map(Number);
+    const ph=Math.min(280,Math.round(H*(220/W)));
+    const pw=Math.round(W*(ph/H));
+    const fmtKey=r.fmt.replace('x','_');
+    const itemIdx=results.filter(x=>x.fmt===r.fmt).indexOf(r);
+    const id='prev_'+fmtKey+'_'+itemIdx;
+    const previewCanvas=document.getElementById(id);
+    if(previewCanvas){
+      const pctx=previewCanvas.getContext('2d');
+      pctx.drawImage(r.canvas,0,0,pw,ph);
+    }
+  });
+}
+
+function dlCanvas(id, label) {
+  const src = document.getElementById(id);
+  if (!src) return;
+  // Get original from STATE
+  const match = STATE.generatedCanvases.find(c=>c.label===label);
+  const a=document.createElement('a');
+  a.download=label+'.png';
+  a.href=(match?match.canvas:src).toDataURL('image/png');
+  a.click();
+}
+
+// ══════════════════════════════════════════════════
+// QUEUE PROCESSING
+// ══════════════════════════════════════════════════
+async function processQueue() {
+  if (!STATE.sheetId) { toast('Connect a sheet first'); return; }
+  const rows = await getSheetRows();
+  const pending = rows.filter(r=>r.status==='Pending' && r.campaign);
+  if (!pending.length) { toast('No pending rows'); return; }
+  switchTab('generate');
+  for(const row of pending){
+    // Fill form with row data
+    document.getElementById('g_campaign').value=row.campaign;
+    document.getElementById('g_category').value=row.category;
+    document.getElementById('g_coupon').value=row.coupon;
+    document.getElementById('g_minorder').value=row.minOrder;
+    document.getElementById('g_cod').value=row.cod;
+    document.getElementById('g_prepaid').value=row.prepaid;
+    document.getElementById('g_subhook').value=row.subHook;
+    if(row.formats){ 
+      document.querySelectorAll('#formatChecks input').forEach(cb=>{ cb.checked=row.formats.includes(cb.value); });
+    }
+    if(row.variants) document.getElementById('g_variants').value=Math.min(4,parseInt(row.variants)||2);
+    // Mark as processing in sheet
+    if(STATE.googleToken!=='DEMO_TOKEN') await writeSheetRow(row.row,'Processing','');
+    await generateNow(row);
+  }
+  toast(`✓ Processed ${pending.length} row(s)`);
+  refreshQueue();
+}
+
+async function processRow(row) {
+  switchTab('generate');
+  document.getElementById('g_campaign').value=row.campaign;
+  document.getElementById('g_category').value=row.category;
+  document.getElementById('g_coupon').value=row.coupon;
+  document.getElementById('g_minorder').value=row.minOrder;
+  document.getElementById('g_cod').value=row.cod;
+  document.getElementById('g_prepaid').value=row.prepaid;
+  await generateNow(row);
+}
+
+// ══════════════════════════════════════════════════
+// SETUP SAVE
+// ══════════════════════════════════════════════════
+function saveSetup() {
+  STATE.sheetId = extractSheetId(document.getElementById('sheetId').value.trim() || '');
+  const driveRaw = document.getElementById('driveFolderId').value.trim();
+  const driveM = driveRaw.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  STATE.driveFolderId = driveM ? driveM[1] : driveRaw || null;
+  saveState();
+  toast('✓ Setup saved');
+  switchTab('generate');
+}
+
+// ══════════════════════════════════════════════════
+// APPS SCRIPT TEMPLATE
+// ══════════════════════════════════════════════════
+function copySheetTemplate() {
+  const script = `// Paste this into your Google Sheet's Apps Script editor
+// Extensions → Apps Script → paste → Save → Run setupSheet first
+
+const GENERATOR_URL = "YOUR_HOSTED_GENERATOR_URL_HERE"; // Update this
+
+function setupSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("Creatives");
+  if (!sheet) sheet = ss.insertSheet("Creatives");
+  const headers = ["Campaign Name","Category","Sub Headline","Coupon Code","Min Order","COD Offer","Prepaid Offer","Product Image URLs","Formats","Variants","Status","Drive Folder Link","Generated At"];
+  sheet.getRange(1,1,1,headers.length).setValues([headers]);
+  sheet.getRange(1,1,1,headers.length).setFontWeight("bold").setBackground("#1a7f78").setFontColor("#ffffff");
+  sheet.setColumnWidths(1,headers.length,160);
+  // Add example row
+  sheet.getRange(2,1,1,13).setValues([["Big Savings Days – JEE","JEE Books","","SAVEBIG","₹500","10% Off up to ₹150 on COD","15% Off up to ₹250 on Prepaid","","1080x1920,1200x1200","2","Pending","",""]]);
+  SpreadsheetApp.getUi().alert("Sheet ready! Column headers created.");
+}
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("🎨 PW Creatives")
+    .addItem("Generate Selected Row", "generateSelected")
+    .addItem("Run All Pending", "openGenerator")
+    .addSeparator()
+    .addItem("Setup Sheet Headers", "setupSheet")
+    .addToUi();
+}
+
+function generateSelected() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const row = sheet.getActiveCell().getRow();
+  if (row < 2) { SpreadsheetApp.getUi().alert("Select a data row (not the header)"); return; }
+  const data = sheet.getRange(row, 1, 1, 13).getValues()[0];
+  const params = {
+    campaign: data[0], category: data[1], subHook: data[2],
+    coupon: data[3], minOrder: data[4], cod: data[5], prepaid: data[6],
+    formats: data[8]||"1080x1920,1200x1200", variants: data[9]||"2", row: row,
+    sheetId: SpreadsheetApp.getActiveSpreadsheet().getId()
+  };
+  const url = GENERATOR_URL + "?" + Object.entries(params).map(([k,v]) => k+"="+encodeURIComponent(v)).join("&");
+  const html = HtmlService.createHtmlOutput('<script>window.open("'+url+'","_blank");google.script.host.close()</'+'script>');
+  SpreadsheetApp.getUi().showModelessDialog(html, "Opening Generator...");
+}
+
+function openGenerator() {
+  const url = GENERATOR_URL + "?sheetId=" + SpreadsheetApp.getActiveSpreadsheet().getId() + "&autorun=true";
+  const html = HtmlService.createHtmlOutput('<script>window.open("'+url+'","_blank");google.script.host.close()</'+'script>');
+  SpreadsheetApp.getUi().showModelessDialog(html, "Opening Generator...");
+}`;
+  navigator.clipboard.writeText(script).then(()=>toast('✓ Apps Script copied to clipboard'));
+}
+
+// ── Auto-load from URL params (when opened from Apps Script) ──
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('campaign')) {
+    document.getElementById('g_campaign').value = params.get('campaign')||'';
+    document.getElementById('g_category').value = params.get('category')||'';
+    document.getElementById('g_coupon').value = params.get('coupon')||'';
+    document.getElementById('g_minorder').value = params.get('minOrder')||'';
+    document.getElementById('g_cod').value = params.get('cod')||'';
+    document.getElementById('g_prepaid').value = params.get('prepaid')||'';
+    document.getElementById('g_subhook').value = params.get('subHook')||'';
+    const fmts = (params.get('formats')||'1080x1920,1200x1200').split(',');
+    document.querySelectorAll('#formatChecks input').forEach(cb=>{ cb.checked=fmts.includes(cb.value); });
+    if (params.get('variants')) document.getElementById('g_variants').value = params.get('variants');
+    if (params.get('sheetId')) { STATE.sheetId=params.get('sheetId'); document.getElementById('sheetId').value=params.get('sheetId'); }
+    switchTab('generate');
+    if (params.get('autorun')==='true') setTimeout(()=>generateNow(), 800);
+  }
+})();
+</script>
+</body>
+</html>
